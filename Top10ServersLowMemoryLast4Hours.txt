@@ -1,0 +1,17 @@
+//Top 10 Lowest Available Memory in GB
+let baseQuery = materialize(
+    Perf
+    | where TimeGenerated > ago(4h)
+| extend ComputerFQDNArray = split(Computer, ".")
+| extend ComputerName = ComputerFQDNArray[0]
+| where CounterName == "Available MBytes"
+);
+baseQuery
+| where Computer in ((
+        baseQuery
+        | summarize avg(CounterValue) by Computer
+        | top 10 by avg_CounterValue asc nulls last 
+        | summarize makeset(Computer) 
+    ))
+| summarize AvailMemGB = avg(CounterValue / 1024) by tostring(ComputerName), bin(TimeGenerated, 15m)
+| render timechart 

@@ -1,0 +1,11 @@
+// Drives with less than 50% Free Space
+let setpctvalue = 50; // enter a % value to check
+Perf
+| where TimeGenerated > ago(4h)
+| extend ComputerFQDNArray = split(Computer, ".")
+| extend ComputerName = ComputerFQDNArray[0]
+| where ObjectName == "LogicalDisk" and CounterName == "% Free Space"
+| where InstanceName contains ":"
+| summarize FreeSpace = min(CounterValue) by tostring(ComputerName), InstanceName
+| where FreeSpace < setpctvalue
+| render barchart kind = stacked

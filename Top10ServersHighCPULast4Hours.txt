@@ -1,0 +1,17 @@
+//Top 10 Highest CPU Utilization
+let baseQuery = materialize(
+    Perf
+    | where TimeGenerated > ago(4h)
+| extend ComputerFQDNArray = split(Computer, ".")
+| extend ComputerName = ComputerFQDNArray[0]
+| where CounterName == "% Processor Time"
+);
+baseQuery
+| where Computer in ((
+        baseQuery
+        | summarize avg(CounterValue) by Computer
+        | top 10 by avg_CounterValue desc nulls last 
+        | summarize makeset(Computer) 
+    ))
+| summarize PercentProcTime = avg(CounterValue) by tostring(ComputerName), bin(TimeGenerated, 15m)
+| render timechart 
